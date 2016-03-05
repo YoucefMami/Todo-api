@@ -1,20 +1,15 @@
 var express = require('express');
+var bodyParser = require('body-parser');
+
 var app = express();
 // process.env.PORT is an ENV variable provided by Heroku
 var PORT = process.env.PORT || 3000;
-var todos = [{
-	id: 1,
-	description: 'Meet mom for lunch',
-	completed: false
-}, {
-	id: 2,
-	description: 'Go to market',
-	completed: false
-}, {
-	id: 3,
-	description: 'Clean apartment',
-	completed: true
-}];
+var todos = [];
+var todoNextId = 1;
+
+// middleware, everytime a JSON request comes in, express will parse it and we'll access it
+// via request.body
+app.use(bodyParser.json());
 
 app.get('/', function (req, res) {
 	res.send('Todo API Root');
@@ -43,6 +38,18 @@ app.get('/todos/:id', function (req, res) {
 		res.status(404).send('Todo with id of ' + req.params.id + ' does not exist!');	
 	}
 });
+
+// POST
+app.post('/todos', function (req, res) {
+	var body = req.body;
+	
+	body.id = todoNextId++; //incrementation after current value is assigned to body.id
+	
+	todos.push(body);
+	
+	res.json(body);
+});
+
 
 // Callback
 app.listen(PORT, function() {
