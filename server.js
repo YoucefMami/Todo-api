@@ -144,35 +144,63 @@ app.delete('/todos/:id', function(req, res) {
 // PUT /todos/:id
 app.put('/todos/:id', function(req, res) {
 	var todoId = parseInt(req.params.id, 10); //req.params.id is a string
-	var matchedTodo = _.findWhere(todos, {
-		id: todoId
-	});
+	// var matchedTodo = _.findWhere(todos, {
+	// 	id: todoId
+	// });
 
-	if (!matchedTodo) {
-		return res.status(404).json({
-			"error": "no todo found with that id"
-		});
-	}
+	// if (!matchedTodo) {
+	// 	return res.status(404).json({
+	// 		"error": "no todo found with that id"
+	// 	});
+	// }
 	// Filter user JSON to only have description and completed keys
 	var body = _.pick(req.body, ['description', 'completed']);
-	var validAttributes = {};
+	//var validAttributes = {};
+	var attributes = {};
 
-	if (body.hasOwnProperty('completed') && _.isBoolean(body.completed)) {
-		validAttributes.completed = body.completed;
-	} else if (body.hasOwnProperty('completed')) {
-		return res.status(400).send('The completed attribute needs to be a boolean!');
+	if (body.hasOwnProperty('completed')) {
+		attributes.completed = body.completed;
 	}
 
-	if (body.hasOwnProperty('description') && _.isString(body.description) && body.description.trim().length > 0) {
-		validAttributes.description = body.description.trim();
-	} else if (body.hasOwnProperty('description')) {
-		return res.status(400).send('The description attribute needs to be a string of length greater than 0!');
+	if (body.hasOwnProperty('description')) {
+		attributes.description = body.description;
 	}
+
+	// if (body.hasOwnProperty('completed') && _.isBoolean(body.completed)) {
+	// 	validAttributes.completed = body.completed;
+	// } else if (body.hasOwnProperty('completed')) {
+	// 	return res.status(400).send('The completed attribute needs to be a boolean!');
+	// }
+
+	// if (body.hasOwnProperty('description') && _.isString(body.description) && body.description.trim().length > 0) {
+	// 	validAttributes.description = body.description.trim();
+	// } else if (body.hasOwnProperty('description')) {
+	// 	return res.status(400).send('The description attribute needs to be a string of length greater than 0!');
+	// }
+
+	db.todo.findById(todoId).then(function (todo) {
+		if (!!todo) {
+			// this is an instance method on a fetched model
+			todo.update(attributes).then(function (todo) {
+				//Update success
+				res.json(todo.toJSON());
+			}, function (e) {
+				// Update error
+				res.status(400).json(e);
+			});
+		} else {
+			return res.status(404).json({
+				"error": "no todo found with that id"
+			});
+		}
+	}, function (e) {
+			res.status(500).send('Something went wrong on the server!');
+	});
 
 	// matchedTodo is passed by reference (like objects)
-	_.extend(matchedTodo, validAttributes);
+	// _.extend(matchedTodo, validAttributes);
 	// Automatically sends back a 200
-	res.json(matchedTodo);
+	// res.json(matchedTodo);
 });
 
 db.sequelize.sync().then(function () {
