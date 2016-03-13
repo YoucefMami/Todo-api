@@ -112,19 +112,33 @@ app.post('/todos', function(req, res) {
 // DELETE /todos/:id
 app.delete('/todos/:id', function(req, res) {
 	var todoId = parseInt(req.params.id, 10); //req.params.id is a string
-	var matchedTodo = _.findWhere(todos, {
-		id: todoId
+
+	db.todo.destroy({where: { id: todoId }}).then(function(rowsDeleted) {
+		if (rowsDeleted === 0) {
+			res.status(404).json({
+				"error": "no todo found with that id"
+			});
+		} else {
+			// 204: everything went well and nothing to return
+			res.status(204).send();
+		}
+	}, function(e) {
+		res.status(500).send('Something went wrong on the server!');
 	});
 
-	if (matchedTodo) {
-		todos = _.without(todos, matchedTodo);
-		// By default res.json sets the status to 200
-		res.json(matchedTodo);
-	} else {
-		res.status(404).json({
-			"error": "no todo found with that id"
-		});
-	}
+	// var matchedTodo = _.findWhere(todos, {
+	// 	id: todoId
+	// });
+
+	// if (matchedTodo) {
+	// 	todos = _.without(todos, matchedTodo);
+	// 	// By default res.json sets the status to 200
+	// 	res.json(matchedTodo);
+	// } else {
+	// 	res.status(404).json({
+	// 		"error": "no todo found with that id"
+	// 	});
+	// }
 });
 
 // PUT /todos/:id
