@@ -2,6 +2,7 @@ var express = require('express');
 var bodyParser = require('body-parser');
 var _ = require('underscore');
 var db = require('./db.js');
+var bcrypt = require('bcrypt');
 
 var app = express();
 // process.env.PORT is an ENV variable provided by Heroku
@@ -109,18 +110,6 @@ app.post('/todos', function(req, res) {
 	// res.json(body);
 });
 
-// POST
-app.post('/users', function(req, res) {
-	// Filter user JSON to only have email and password keys
-	var body = _.pick(req.body, ['email', 'password']);
-
-	db.user.create(body).then(function (user) {
-		res.json(user.toPublicJSON());
-	}, function (e) {
-		res.status(400).json(e);
-	});
-});
-
 // DELETE /todos/:id
 app.delete('/todos/:id', function(req, res) {
 	var todoId = parseInt(req.params.id, 10); //req.params.id is a string
@@ -215,7 +204,31 @@ app.put('/todos/:id', function(req, res) {
 	// res.json(matchedTodo);
 });
 
-db.sequelize.sync().then(function () {
+// POST
+app.post('/users', function(req, res) {
+	// Filter user JSON to only have email and password keys
+	var body = _.pick(req.body, ['email', 'password']);
+
+	db.user.create(body).then(function (user) {
+		res.json(user.toPublicJSON());
+	}, function (e) {
+		res.status(400).json(e);
+	});
+});
+
+// POST
+app.post('/users/login', function(req, res) {
+	// Filter user JSON to only have email and password keys
+	var body = _.pick(req.body, ['email', 'password']);
+
+	db.user.authenticate(body).then(function (user) {
+		res.json(user.toPublicJSON());
+	}, function () {
+		res.status(401).send();
+	});
+});
+
+db.sequelize.sync({force: true}).then(function () {
 	// Callback
 	app.listen(PORT, function() {
 		console.log('Express listening on port ' + PORT + '!');
