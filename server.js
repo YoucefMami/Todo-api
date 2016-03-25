@@ -23,7 +23,10 @@ app.get('/', function(req, res) {
 app.get('/todos', middleware.requireAuthentication, function(req, res) {
 	var queryParams = req.query;
 
-	var where = {};
+	var where = {
+		userId: req.user.get('id')
+	};
+
 	if (queryParams.hasOwnProperty('completed') && queryParams.completed === 'true') {
 		where.completed = true;
 	} else if (queryParams.hasOwnProperty('completed') && queryParams.completed === 'false') {
@@ -66,8 +69,14 @@ app.get('/todos', middleware.requireAuthentication, function(req, res) {
 // GET /todos/:id
 app.get('/todos/:id', middleware.requireAuthentication, function(req, res) {
 	var todoId = parseInt(req.params.id, 10); //req.params.id is a string
-	
-	db.todo.findById(todoId).then(function(todo) {
+
+	//findOne with where
+	db.todo.findOne({ 
+		where :{
+			id: todoId,
+			userId: req.user.get('id')
+		}
+	}).then(function(todo) {
 		if (!!todo) {
 			res.json(todo.toJSON());
 		} else {
@@ -94,7 +103,7 @@ app.post('/todos', middleware.requireAuthentication, function(req, res) {
 	var body = _.pick(req.body, ['description', 'completed']);
 
 	db.todo.create(body).then(function (todo) {
-		req.user.addTodo(todo).then(function(todo){
+		req.user.addTodo(todo).then(function(){
 			// todo is different from the todo after create(body) because there is an association to user
 			return todo.reload();
 		}).then(function (todo) {
@@ -120,7 +129,12 @@ app.post('/todos', middleware.requireAuthentication, function(req, res) {
 app.delete('/todos/:id', middleware.requireAuthentication, function(req, res) {
 	var todoId = parseInt(req.params.id, 10); //req.params.id is a string
 
-	db.todo.destroy({where: { id: todoId }}).then(function(rowsDeleted) {
+	db.todo.destroy({ 
+		where :{
+			id: todoId,
+			userId: req.user.get('id')
+		}
+	}).then(function(rowsDeleted) {
 		if (rowsDeleted === 0) {
 			res.status(404).json({
 				"error": "no todo found with that id"
@@ -185,7 +199,13 @@ app.put('/todos/:id', middleware.requireAuthentication, function(req, res) {
 	// 	return res.status(400).send('The description attribute needs to be a string of length greater than 0!');
 	// }
 
-	db.todo.findById(todoId).then(function (todo) {
+	// findOne
+	db.todo.findOne({ 
+		where :{
+			id: todoId,
+			userId: req.user.get('id')
+		}
+	}).then(function (todo) {
 		if (!!todo) {
 			// this is an instance method on a fetched model
 			todo.update(attributes).then(function (todo) {
